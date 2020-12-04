@@ -1,3 +1,12 @@
+#Import Package
+import numpy as np # linear algebra
+import pandas as pd # data processing
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
+import datetime
+from sklearn import datasets, ensemble
+from xgboost import XGBRegressor
+
 #Drop Outlier
 train_data=train_data.drop([5708, 5709, 9895, 513, 3196, 7226, 6540, 6541, 2821, 5506, 4259, 12320, 12735, 1590, 916, 12735, 10498])
 train_data=train_data.drop([7523, 12258, 2822, 986, 1195, 5530, 6850, 1488, 12827, 5381, 13498, 11840, 5616, 4400, 12642, 9597, 8529, 2338, 3898, 13691])
@@ -6,10 +15,6 @@ train_data=train_data.drop([9376, 11611, 2112, 5071, 4399, 12537, 5045, 13577, 6
 train_data=train_data.drop([6610, 2998, 12833, 12734, 12140, 11676])
 
 train_data['date'] = pd.to_datetime(train_data['date'], dayfirst=True)
-
-from sklearn import datasets, ensemble
-from xgboost import XGBRegressor
-
 y = train_data.speed
 train_data['year'] = pd.DatetimeIndex(train_data['date']).year
 train_data['month'] = pd.DatetimeIndex(train_data['date']).month
@@ -95,4 +100,5 @@ train_data['EarlyOffWork'] = ((train_data.hour>=16) & (train_data.hour<=18)&((tr
 model = XGBRegressor(n_estimators=1400, learning_rate=0.009, n_jobs=4, max_depth = 10)
 model.fit(X_train, y_train)
 
+#Train the model
 reg = model.fit(train_data[train_data.columns.difference(['speed','id','date','year','month','day','hour','weekday', 'week_number','week_53'])], y)
