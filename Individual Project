@@ -1,0 +1,98 @@
+#Drop Outlier
+train_data=train_data.drop([5708, 5709, 9895, 513, 3196, 7226, 6540, 6541, 2821, 5506, 4259, 12320, 12735, 1590, 916, 12735, 10498])
+train_data=train_data.drop([7523, 12258, 2822, 986, 1195, 5530, 6850, 1488, 12827, 5381, 13498, 11840, 5616, 4400, 12642, 9597, 8529, 2338, 3898, 13691])
+train_data=train_data.drop([4236, 2593, 11427, 6036, 12328, 5219, 8407, 11822, 8532, 3151, 8379, 6531, 6049, 8385, 12732, 6333])
+train_data=train_data.drop([9376, 11611, 2112, 5071, 4399, 12537, 5045, 13577, 6516, 9538, 12008, 6918, 3391, 8244, 2579, 5073, 4021])
+train_data=train_data.drop([6610, 2998, 12833, 12734, 12140, 11676])
+
+train_data['date'] = pd.to_datetime(train_data['date'], dayfirst=True)
+
+from sklearn import datasets, ensemble
+from xgboost import XGBRegressor
+
+y = train_data.speed
+train_data['year'] = pd.DatetimeIndex(train_data['date']).year
+train_data['month'] = pd.DatetimeIndex(train_data['date']).month
+train_data['day'] = pd.DatetimeIndex(train_data['date']).day
+train_data['hour'] = pd.DatetimeIndex(train_data['date']).hour
+train_data['weekday'] = pd.DatetimeIndex(train_data['date']).weekday
+train_data['week_number'] = train_data['date'].dt.strftime('%U')
+
+#One-Hot Encoded
+train_data['2017'] = (train_data.year==2017).astype(int)
+train_data['2018'] = (train_data.year==2018).astype(int)
+
+train_data['Dawn'] = (train_data.hour<7).astype(int)
+train_data['Morning'] = ((train_data.hour>=7) & (train_data.hour<=11)).astype(int)
+train_data['Afternoon'] = ((train_data.hour>11) & (train_data.hour<=19)).astype(int)
+train_data['Evening'] = (train_data.hour>19).astype(int)
+
+train_data['Return'] = ((train_data.hour>=8) & (train_data.hour<=9)).astype(int)
+train_data['Lunch'] = ((train_data.hour>=12) & (train_data.hour<=13)).astype(int)
+#train_data['OffSchool'] = ((train_data.hour>=14) & (train_data.hour<=16)).astype(int)
+train_data['OffWork'] = ((train_data.hour>=17) & (train_data.hour<=18)).astype(int)
+train_data['FriNight'] = ((train_data.hour>=22) & (train_data.weekday==4)).astype(int)
+train_data['SatNight'] = ((train_data.hour>=21) & (train_data.weekday==5)).astype(int)
+train_data['SunNight'] = ((train_data.hour>=21) & (train_data.hour<=23) & (train_data.weekday==6)).astype(int)
+
+train_data['First_week_of_the_month'] = (train_data.day<=7).astype(int)
+train_data['Second_week_of_the_month'] = ((train_data.day>=8) & (train_data.day<=14)).astype(int)
+train_data['Third_week_of_the_month'] = ((train_data.day>=15) & (train_data.day<=21)).astype(int)
+train_data['Forth_week_of_the_month'] = ((train_data.day>=22) & (train_data.day<=28)).astype(int)
+train_data['Last_week_of_the_month'] = (train_data.day>=29).astype(int)
+
+train_data['WorkingDay'] = (train_data.weekday<=4).astype(int)
+train_data['Weekend'] = (train_data.weekday>4).astype(int)
+
+train_data = pd.concat([train_data,pd.get_dummies(train_data['weekday'], prefix='Weekday')],axis=1)
+train_data = pd.concat([train_data,pd.get_dummies(train_data['hour'], prefix='HR')],axis=1)
+train_data = pd.concat([train_data,pd.get_dummies(train_data['week_number'], prefix='week')],axis=1)
+train_data = pd.concat([train_data,pd.get_dummies(train_data['day'], prefix='Day')],axis=1)
+train_data = pd.concat([train_data,pd.get_dummies(train_data['month'], prefix='Month')],axis=1)
+
+train_data['Q1end'] = ((train_data.month==3)&(train_data.day==31)).astype(int)
+train_data['Q2end'] = ((train_data.month==6)&(train_data.day==30)).astype(int)
+train_data['Q3end'] = ((train_data.month==9)&(train_data.day==30)).astype(int)
+train_data['Q4end'] = ((train_data.month==12)&(train_data.day==31)).astype(int)
+#train_data['Qend'] = ((train_data.Q1end==1)|(train_data.Q2end==1)|(train_data.Q3end==1)|(train_data.Q4end==1)).astype(int)
+
+train_data['Q1'] = ((train_data.month>=1) & (train_data.month<=3)).astype(int)
+train_data['Q2'] = ((train_data.month>=4) & (train_data.month<=6)).astype(int)
+train_data['Q3'] = ((train_data.month>=7) & (train_data.month<=9)).astype(int)
+train_data['Q4'] = ((train_data.month>=10) & (train_data.month<=12)).astype(int)
+
+train_data['NewYear'] = (((train_data.month==1)&(train_data.day==1)&(train_data.year==2018))|((train_data.month==1)&(train_data.day==2)&(train_data.year==2017))).astype(int)
+train_data['BeforeChineseNewYear'] = (((train_data.month==2)&(train_data.day==15)&(train_data.year==2018))|((train_data.month==1)&(train_data.day==27)&(train_data.year==2017))).astype(int)
+train_data['ChineseNewYear'] = (((train_data.month==2)&(train_data.day>=16)&(train_data.day<=19)&(train_data.year==2018))|((train_data.month==1)&(train_data.day>=28)&(train_data.day<=31)&(train_data.year==2017))).astype(int)
+train_data['AfterChineseNewYear'] = (((train_data.month==2)&(train_data.day>=20)&(train_data.day<=22)&(train_data.year==2018))|((train_data.month==2)&(train_data.day<=3)&(train_data.year==2017))).astype(int)
+train_data['ChingMing'] = (((train_data.month==4)&(train_data.day==4)&(train_data.year==2017))|((train_data.month==4)&(train_data.day==5)&(train_data.year==2018))).astype(int)
+train_data['Easter'] = (((train_data.month==4)&(train_data.day>=14)&(train_data.day<=17)&(train_data.year==2017))|((train_data.month==3)&(train_data.day>=30)&(train_data.day<=31)&(train_data.year==2018))|((train_data.month==4)&(train_data.day<=2)&(train_data.year==2018))).astype(int)
+train_data['LabourDay'] = ((train_data.month==5)&(train_data.day==1)).astype(int)
+train_data['Buddha'] = (((train_data.month==5)&(train_data.day==3)&(train_data.year==2017))|((train_data.month==5)&(train_data.day==22)&(train_data.year==2018))).astype(int)
+train_data['TuenNg'] = (((train_data.month==5)&(train_data.day==30)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==18)&(train_data.year==2018))).astype(int)
+train_data['HKSAR'] = (((train_data.month==7)&(train_data.day==1)&(train_data.year==2017))|((train_data.month==7)&(train_data.day==2)&(train_data.year==2018))).astype(int)
+train_data['National'] = (((train_data.month==10)&(train_data.day==2)&(train_data.year==2017))|((train_data.month==10)&(train_data.day==1)&(train_data.year==2018))).astype(int)
+train_data['MidAutumnHoliday'] = (((train_data.month==10)&(train_data.day==5)&(train_data.year==2017))|((train_data.month==9)&(train_data.day==25)&(train_data.year==2018))).astype(int)
+train_data['ChungYeung'] = (((train_data.month==10)&(train_data.day==28)&(train_data.year==2017))|((train_data.month==10)&(train_data.day==17)&(train_data.year==2018))).astype(int)
+train_data['Christmas'] = ((train_data.month==12)&(train_data.day>=25)&(train_data.day<=26)).astype(int)
+
+train_data['Holiday'] = ((train_data.NewYear==1)|(train_data.ChineseNewYear==1)|(train_data.LabourDay==1)|(train_data.Christmas==1)|(train_data.Easter==1)|(train_data.ChingMing==1)|(train_data.TuenNg==1)|(train_data.HKSAR==1)|(train_data.National==1)|(train_data.ChungYeung==1)|(train_data.MidAutumnHoliday==1)|(train_data.Buddha==1)).astype(int)
+train_data['StatutoryHoliday'] = ((train_data.NewYear==1)|(train_data.ChineseNewYear==1)|(train_data.LabourDay==1)|(train_data.Christmas==1)|(train_data.ChingMing==1)|(train_data.TuenNg==1)|(train_data.HKSAR==1)|(train_data.National==1)|(train_data.ChungYeung==1)|(train_data.MidAutumnHoliday==1)).astype(int)
+
+train_data['Rain'] = (((train_data.month==5)&(train_data.day==24)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==12)&(train_data.year==2017))|((train_data.month==7)&(train_data.day==18)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==8)&(train_data.year==2018))).astype(int)
+train_data['Impact_by_Rain'] = ((train_data.hour>=7) & (train_data.hour<=19)&(train_data.Rain==1)).astype(int)
+train_data['Mangkhut'] = ((train_data.month==9)&(train_data.day==16)&(train_data.year==2018) & (train_data.hour>=11) & (train_data.hour<=15)).astype(int)
+#train_data['Typhoon_Weekend'] = (((train_data.month==7)&(train_data.day==23)&(train_data.year==2017))|((train_data.month==9)&(train_data.day==16)&(train_data.year==2018))).astype(int)
+train_data['Typhoon_WorkingDay'] = (((train_data.month==8)&(train_data.day==23)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==13)&(train_data.year==2017))).astype(int)
+train_data['Valentine'] = ((train_data.month==2)&(train_data.day==14)).astype(int)
+train_data['Halloween'] = ((train_data.month==10)&(train_data.day==31)).astype(int)
+train_data['lunar28'] = (((train_data.month==1)&(train_data.day==25)&(train_data.year==2017))|((train_data.month==2)&(train_data.day==13)&(train_data.year==2018))).astype(int)
+train_data['WinterSolstice'] = (((train_data.month==12)&(train_data.day==22)&(train_data.year==2017))|((train_data.month==12)&(train_data.day==21)&(train_data.year==2018))).astype(int)
+train_data['MidAutumn'] = (((train_data.month==10)&(train_data.day==4)&(train_data.year==2017))|((train_data.month==9)&(train_data.day==24)&(train_data.year==2018))).astype(int)
+train_data['ChristmasEve'] = ((train_data.month==12)&(train_data.day==24)&(train_data.year==2018)).astype(int)
+train_data['EarlyOffWork'] = ((train_data.hour>=16) & (train_data.hour<=18)&((train_data.WinterSolstice==1)|(train_data.MidAutumn==1)|(train_data.lunar28==1)|(train_data.ChristmasEve==1))).astype(int)
+
+model = XGBRegressor(n_estimators=1400, learning_rate=0.009, n_jobs=4, max_depth = 10)
+model.fit(X_train, y_train)
+
+reg = model.fit(train_data[train_data.columns.difference(['speed','id','date','year','month','day','hour','weekday', 'week_number','week_53'])], y)
