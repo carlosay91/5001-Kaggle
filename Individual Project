@@ -7,6 +7,9 @@ import datetime
 from sklearn import datasets, ensemble
 from xgboost import XGBRegressor
 
+#Load Training Data
+train_data = pd.read_csv("./train.csv")
+
 #Drop Outlier
 train_data=train_data.drop([5708, 5709, 9895, 513, 3196, 7226, 6540, 6541, 2821, 5506, 4259, 12320, 12735, 1590, 916, 12735, 10498])
 train_data=train_data.drop([7523, 12258, 2822, 986, 1195, 5530, 6850, 1488, 12827, 5381, 13498, 11840, 5616, 4400, 12642, 9597, 8529, 2338, 3898, 13691])
@@ -102,3 +105,90 @@ model.fit(X_train, y_train)
 
 #Train the model
 reg = model.fit(train_data[train_data.columns.difference(['speed','id','date','year','month','day','hour','weekday', 'week_number','week_53'])], y)
+
+#Load Testing Data
+test_data = pd.read_csv("./test.csv")
+
+test_data['date'] = pd.to_datetime(test_data['date'], dayfirst=True)
+
+test_data['year'] = pd.DatetimeIndex(test_data['date']).year
+test_data['month'] = pd.DatetimeIndex(test_data['date']).month
+test_data['day'] = pd.DatetimeIndex(test_data['date']).day
+test_data['hour'] = pd.DatetimeIndex(test_data['date']).hour
+test_data['weekday'] = pd.DatetimeIndex(test_data['date']).weekday
+test_data['week_number'] = test_data['date'].dt.strftime('%U')
+
+#One-Hot Encoded
+test_data['2017'] = (test_data.year==2017).astype(int)
+test_data['2018'] = (test_data.year==2018).astype(int)
+test_data['Dawn'] = (test_data.hour<7).astype(int)
+test_data['Morning'] = ((test_data.hour>=7) & (test_data.hour<=11)).astype(int)
+test_data['Afternoon'] = ((test_data.hour>=12) & (test_data.hour<=19)).astype(int)
+test_data['Evening'] = (test_data.hour>19).astype(int)
+
+test_data['Return'] = ((test_data.hour>=8) & (test_data.hour<=9)).astype(int)
+test_data['Lunch'] = ((test_data.hour>=12) & (test_data.hour<=13)).astype(int)
+test_data['OffWork'] = ((test_data.hour>=17) & (test_data.hour<=18)).astype(int)
+test_data['FriNight'] = ((test_data.hour>=22) & (test_data.weekday==4)).astype(int)
+test_data['SatNight'] = ((test_data.hour>=21) & (test_data.weekday==5)).astype(int)
+test_data['SunNight'] = ((test_data.hour>=21) & (test_data.weekday==6)).astype(int)
+
+test_data['First_week_of_the_month'] = (test_data.day<=7).astype(int)
+test_data['Second_week_of_the_month'] = ((test_data.day>=8) & (test_data.day<=14)).astype(int)
+test_data['Third_week_of_the_month'] = ((test_data.day>=15) & (test_data.day<=21)).astype(int)
+test_data['Forth_week_of_the_month'] = ((test_data.day>=22) & (test_data.day<=28)).astype(int)
+test_data['Last_week_of_the_month'] = (test_data.day>=29).astype(int)
+
+test_data['WorkingDay'] = (test_data.weekday<=4).astype(int)
+test_data['Weekend'] = (test_data.weekday>4).astype(int)
+
+test_data = pd.concat([test_data,pd.get_dummies(test_data['weekday'], prefix='Weekday')],axis=1)
+test_data = pd.concat([test_data,pd.get_dummies(test_data['hour'], prefix='HR')],axis=1)
+test_data = pd.concat([test_data,pd.get_dummies(test_data['week_number'], prefix='week')],axis=1)
+test_data = pd.concat([test_data,pd.get_dummies(test_data['day'], prefix='Day')],axis=1)
+test_data = pd.concat([test_data,pd.get_dummies(test_data['month'], prefix='Month')],axis=1)
+
+test_data['Q1end'] = ((test_data.month==3)&(test_data.day==31)).astype(int)
+test_data['Q2end'] = ((test_data.month==6)&(test_data.day==30)).astype(int)
+test_data['Q3end'] = ((test_data.month==9)&(test_data.day==30)).astype(int)
+test_data['Q4end'] = ((test_data.month==12)&(test_data.day==31)).astype(int)
+
+test_data['Q1'] = ((test_data.month>=1) & (test_data.month<=3)).astype(int)
+test_data['Q2'] = ((test_data.month>=4) & (test_data.month<=6)).astype(int)
+test_data['Q3'] = ((test_data.month>=7) & (test_data.month<=9)).astype(int)
+test_data['Q4'] = ((test_data.month>=10) & (test_data.month<=12)).astype(int)
+
+test_data['NewYear'] = (((test_data.month==1)&(test_data.day==1)&(test_data.year==2018))|((test_data.month==1)&(test_data.day==2)&(test_data.year==2017))).astype(int)
+test_data['BeforeChineseNewYear'] = (((test_data.month==2)&(test_data.day==15)&(test_data.year==2018))|((test_data.month==1)&(test_data.day==27)&(test_data.year==2017))).astype(int)
+test_data['ChineseNewYear'] = (((test_data.month==2)&(test_data.day>=16)&(test_data.day<=19)&(test_data.year==2018))|((test_data.month==1)&(test_data.day>=28)&(test_data.day<=31)&(test_data.year==2017))).astype(int)
+test_data['AfterChineseNewYear'] = (((test_data.month==2)&(test_data.day>=20)&(test_data.day<=22)&(test_data.year==2018))|((test_data.month==2)&(test_data.day>=1)&(test_data.day<=3)&(test_data.year==2017))).astype(int)
+test_data['LabourDay'] = ((test_data.month==5)&(test_data.day==1)).astype(int)
+test_data['Christmas'] = ((test_data.month==12)&(test_data.day>=25)&(test_data.day<=26)).astype(int)
+test_data['Easter'] = (((test_data.month==4)&(test_data.day>=14)&(test_data.day<=17)&(test_data.year==2017))|((test_data.month==3)&(test_data.day>=30)&(test_data.day<=31)&(test_data.year==2018))|((test_data.month==4)&(test_data.day<=2)&(test_data.year==2018))).astype(int)
+test_data['ChingMing'] = (((test_data.month==4)&(test_data.day==4)&(test_data.year==2017))|((test_data.month==4)&(test_data.day==5)&(test_data.year==2018))).astype(int)
+test_data['TuenNg'] = (((test_data.month==5)&(test_data.day==30)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==18)&(test_data.year==2018))).astype(int)
+test_data['HKSAR'] = (((test_data.month==7)&(test_data.day==1)&(test_data.year==2017))|((test_data.month==7)&(test_data.day==2)&(test_data.year==2018))).astype(int)
+test_data['National'] = (((test_data.month==10)&(test_data.day==2)&(test_data.year==2017))|((test_data.month==10)&(test_data.day==1)&(test_data.year==2018))).astype(int)
+test_data['ChungYeung'] = (((test_data.month==10)&(test_data.day==28)&(test_data.year==2017))|((test_data.month==10)&(test_data.day==17)&(test_data.year==2018))).astype(int)
+test_data['MidAutumnHoliday'] = (((test_data.month==10)&(test_data.day==5)&(test_data.year==2017))|((test_data.month==9)&(test_data.day==25)&(test_data.year==2018))).astype(int)
+test_data['Buddha'] = (((test_data.month==5)&(test_data.day==3)&(test_data.year==2017))|((test_data.month==5)&(test_data.day==22)&(test_data.year==2018))).astype(int)
+test_data['Holiday'] = ((test_data.NewYear==1)|(test_data.ChineseNewYear==1)|(test_data.LabourDay==1)|(test_data.Christmas==1)|(test_data.Easter==1)|(test_data.ChingMing==1)|(test_data.TuenNg==1)|(test_data.HKSAR==1)|(test_data.National==1)|(test_data.ChungYeung==1)|(test_data.MidAutumnHoliday==1)|(test_data.Buddha==1)).astype(int)
+test_data['StatutoryHoliday'] = ((test_data.NewYear==1)|(test_data.ChineseNewYear==1)|(test_data.LabourDay==1)|(test_data.Christmas==1)|(test_data.ChingMing==1)|(test_data.TuenNg==1)|(test_data.HKSAR==1)|(test_data.National==1)|(test_data.ChungYeung==1)|(test_data.MidAutumnHoliday==1)).astype(int)
+
+test_data['Rain'] = (((test_data.month==5)&(test_data.day==24)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==12)&(test_data.year==2017))|((test_data.month==7)&(test_data.day==18)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==8)&(test_data.year==2018))).astype(int)
+test_data['Impact_by_Rain'] = ((test_data.hour>=7) & (test_data.hour<=19)&(test_data.Rain==1)).astype(int)
+test_data['Mangkhut'] = ((test_data.month==9)&(test_data.day==16)&(test_data.year==2018) & (test_data.hour>=10) & (test_data.hour<=15)).astype(int)
+#test_data['Typhoon_Weekend'] = (((test_data.month==10)&(test_data.day==15)&(test_data.year==2017))|((test_data.month==8)&(test_data.day==27)&(test_data.year==2017))|((test_data.month==7)&(test_data.day==23)&(test_data.year==2017))|((test_data.month==9)&(test_data.day==16)&(test_data.year==2018))).astype(int)
+test_data['Typhoon_WorkingDay'] = (((test_data.month==8)&(test_data.day==23)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==13)&(test_data.year==2017))).astype(int)
+test_data['Valentine'] = ((test_data.month==2)&(test_data.day==14)).astype(int)
+test_data['Halloween'] = ((test_data.month==10)&(test_data.day==31)).astype(int)
+test_data['lunar28'] = (((test_data.month==1)&(test_data.day==25)&(test_data.year==2017))|((test_data.month==2)&(test_data.day==13)&(test_data.year==2018))).astype(int)
+test_data['WinterSolstice'] = (((test_data.month==12)&(test_data.day==22)&(test_data.year==2017))|((test_data.month==12)&(test_data.day==21)&(test_data.year==2018))).astype(int)
+test_data['MidAutumn'] = (((test_data.month==10)&(test_data.day==4)&(test_data.year==2017))|((test_data.month==9)&(test_data.day==24)&(test_data.year==2018))).astype(int)
+test_data['ChristmasEve'] = ((test_data.month==12)&(test_data.day==24)&(test_data.year==2018)).astype(int)
+test_data['EarlyOffWork'] = ((test_data.hour>=16) & (test_data.hour<=18)&((test_data.WinterSolstice==1)|(test_data.MidAutumn==1)|(test_data.lunar28==1)|(test_data.ChristmasEve==1))).astype(int)
+
+predict_y = reg.predict(test_data[test_data.columns.difference(['speed','id','date','year','month','day','hour','weekday','week_number','week_53'])])
+
+#Output File
+np.savetxt("./submission.csv", np.c_[test_data['id'], predict_y], header="id,speed" , delimiter=",", comments='')
