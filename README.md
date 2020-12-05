@@ -16,5 +16,8 @@ FInally, the code implement the trained model to the testing data and thus outpu
 
 The procedure of running the file:
 
-1) Ensure the test data and train data are saved to the path
-2) Execute the code
+1) Run the first bloc to import the package
+2) Run the second bloc to drop the outlier and train the model
+3) Run the third bloc to implement the model on the testing data
+4) Run the last bloc to output the file
+
