@@ -15,7 +15,9 @@ train_data=train_data.drop([5708, 5709, 9895, 513, 3196, 7226, 6540, 6541, 2821,
 train_data=train_data.drop([7523, 12258, 2822, 986, 1195, 5530, 6850, 1488, 12827, 5381, 13498, 11840, 5616, 4400, 12642, 9597, 8529, 2338, 3898, 13691])
 train_data=train_data.drop([4236, 2593, 11427, 6036, 12328, 5219, 8407, 11822, 8532, 3151, 8379, 6531, 6049, 8385, 12732, 6333])
 train_data=train_data.drop([9376, 11611, 2112, 5071, 4399, 12537, 5045, 13577, 6516, 9538, 12008, 6918, 3391, 8244, 2579, 5073, 4021])
-train_data=train_data.drop([6610, 2998, 12833, 12734, 12140, 11676])
+train_data=train_data.drop([6610, 2998, 12833, 12734, 12140, 11676, 4334, 11426, 5820, 8408, 12640, 12175, 2845, 11523, 11522, 12283, 5289])
+train_data=train_data.drop([8386, 11950, 6494, 10549, 9413, 8412, 8411, 8955, 3491, 6035, 5088, 10171, 5304, 2722, 4422, 9364, 7541, 7542, 12647])
+train_data=train_data.drop([10173, 4040, 3200, 2090, 13323])
 
 #Extract Useful Information from train data 
 train_data['date'] = pd.to_datetime(train_data['date'], dayfirst=True)
@@ -90,6 +92,8 @@ train_data['Rain'] = (((train_data.month==5)&(train_data.day==24)&(train_data.ye
 train_data['Impact_by_Rain'] = ((train_data.hour>=7) & (train_data.hour<=19)&(train_data.Rain==1)).astype(int)
 train_data['Mangkhut'] = ((train_data.month==9)&(train_data.day==16)&(train_data.year==2018) & (train_data.hour>=11) & (train_data.hour<=15)).astype(int)
 train_data['Typhoon_WorkingDay'] = (((train_data.month==8)&(train_data.day==23)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==13)&(train_data.year==2017))).astype(int)
+train_data['Impact_by_Typhoon'] = ((train_data.hour>=8) & (train_data.hour<=19)&(train_data.Typhoon_WorkingDay==1)).astype(int)
+train_data['Other_Special'] = ((train_data.month==7)&(train_data.day==7)&(train_data.year==2018)&(train_data.hour>=8) & (train_data.hour<=15)).astype(int)
 train_data['Valentine'] = ((train_data.month==2)&(train_data.day==14)).astype(int)
 train_data['Halloween'] = ((train_data.month==10)&(train_data.day==31)).astype(int)
 train_data['lunar28'] = (((train_data.month==1)&(train_data.day==25)&(train_data.year==2017))|((train_data.month==2)&(train_data.day==13)&(train_data.year==2018))).astype(int)
@@ -178,6 +182,8 @@ test_data['Rain'] = (((test_data.month==5)&(test_data.day==24)&(test_data.year==
 test_data['Impact_by_Rain'] = ((test_data.hour>=7) & (test_data.hour<=19)&(test_data.Rain==1)).astype(int)
 test_data['Mangkhut'] = ((test_data.month==9)&(test_data.day==16)&(test_data.year==2018) & (test_data.hour>=10) & (test_data.hour<=15)).astype(int)
 test_data['Typhoon_WorkingDay'] = (((test_data.month==8)&(test_data.day==23)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==13)&(test_data.year==2017))).astype(int)
+test_data['Impact_by_Typhoon'] = ((test_data.hour>=8) & (test_data.hour<=19)&(test_data.Typhoon_WorkingDay==1)).astype(int)
+test_data['Other_Special'] = ((test_data.month==7)&(test_data.day==7)&(test_data.year==2018)&(test_data.hour>=8) & (test_data.hour<=15)).astype(int)
 test_data['Valentine'] = ((test_data.month==2)&(test_data.day==14)).astype(int)
 test_data['Halloween'] = ((test_data.month==10)&(test_data.day==31)).astype(int)
 test_data['lunar28'] = (((test_data.month==1)&(test_data.day==25)&(test_data.year==2017))|((test_data.month==2)&(test_data.day==13)&(test_data.year==2018))).astype(int)
