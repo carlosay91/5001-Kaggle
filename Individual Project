@@ -1,6 +1,6 @@
 #Import Package
-import numpy as np # linear algebra
-import pandas as pd # data processing
+import numpy as np
+import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 import datetime
@@ -17,6 +17,7 @@ train_data=train_data.drop([4236, 2593, 11427, 6036, 12328, 5219, 8407, 11822, 8
 train_data=train_data.drop([9376, 11611, 2112, 5071, 4399, 12537, 5045, 13577, 6516, 9538, 12008, 6918, 3391, 8244, 2579, 5073, 4021])
 train_data=train_data.drop([6610, 2998, 12833, 12734, 12140, 11676])
 
+#Extract Useful Information from train data 
 train_data['date'] = pd.to_datetime(train_data['date'], dayfirst=True)
 y = train_data.speed
 train_data['year'] = pd.DatetimeIndex(train_data['date']).year
@@ -26,7 +27,7 @@ train_data['hour'] = pd.DatetimeIndex(train_data['date']).hour
 train_data['weekday'] = pd.DatetimeIndex(train_data['date']).weekday
 train_data['week_number'] = train_data['date'].dt.strftime('%U')
 
-#One-Hot Encoded
+#Feature Engineering (One-Hot Encoded for the train data)
 train_data['2017'] = (train_data.year==2017).astype(int)
 train_data['2018'] = (train_data.year==2018).astype(int)
 
@@ -37,7 +38,6 @@ train_data['Evening'] = (train_data.hour>19).astype(int)
 
 train_data['Return'] = ((train_data.hour>=8) & (train_data.hour<=9)).astype(int)
 train_data['Lunch'] = ((train_data.hour>=12) & (train_data.hour<=13)).astype(int)
-#train_data['OffSchool'] = ((train_data.hour>=14) & (train_data.hour<=16)).astype(int)
 train_data['OffWork'] = ((train_data.hour>=17) & (train_data.hour<=18)).astype(int)
 train_data['FriNight'] = ((train_data.hour>=22) & (train_data.weekday==4)).astype(int)
 train_data['SatNight'] = ((train_data.hour>=21) & (train_data.weekday==5)).astype(int)
@@ -62,7 +62,6 @@ train_data['Q1end'] = ((train_data.month==3)&(train_data.day==31)).astype(int)
 train_data['Q2end'] = ((train_data.month==6)&(train_data.day==30)).astype(int)
 train_data['Q3end'] = ((train_data.month==9)&(train_data.day==30)).astype(int)
 train_data['Q4end'] = ((train_data.month==12)&(train_data.day==31)).astype(int)
-#train_data['Qend'] = ((train_data.Q1end==1)|(train_data.Q2end==1)|(train_data.Q3end==1)|(train_data.Q4end==1)).astype(int)
 
 train_data['Q1'] = ((train_data.month>=1) & (train_data.month<=3)).astype(int)
 train_data['Q2'] = ((train_data.month>=4) & (train_data.month<=6)).astype(int)
@@ -90,7 +89,6 @@ train_data['StatutoryHoliday'] = ((train_data.NewYear==1)|(train_data.ChineseNew
 train_data['Rain'] = (((train_data.month==5)&(train_data.day==24)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==12)&(train_data.year==2017))|((train_data.month==7)&(train_data.day==18)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==8)&(train_data.year==2018))).astype(int)
 train_data['Impact_by_Rain'] = ((train_data.hour>=7) & (train_data.hour<=19)&(train_data.Rain==1)).astype(int)
 train_data['Mangkhut'] = ((train_data.month==9)&(train_data.day==16)&(train_data.year==2018) & (train_data.hour>=11) & (train_data.hour<=15)).astype(int)
-#train_data['Typhoon_Weekend'] = (((train_data.month==7)&(train_data.day==23)&(train_data.year==2017))|((train_data.month==9)&(train_data.day==16)&(train_data.year==2018))).astype(int)
 train_data['Typhoon_WorkingDay'] = (((train_data.month==8)&(train_data.day==23)&(train_data.year==2017))|((train_data.month==6)&(train_data.day==13)&(train_data.year==2017))).astype(int)
 train_data['Valentine'] = ((train_data.month==2)&(train_data.day==14)).astype(int)
 train_data['Halloween'] = ((train_data.month==10)&(train_data.day==31)).astype(int)
@@ -100,6 +98,7 @@ train_data['MidAutumn'] = (((train_data.month==10)&(train_data.day==4)&(train_da
 train_data['ChristmasEve'] = ((train_data.month==12)&(train_data.day==24)&(train_data.year==2018)).astype(int)
 train_data['EarlyOffWork'] = ((train_data.hour>=16) & (train_data.hour<=18)&((train_data.WinterSolstice==1)|(train_data.MidAutumn==1)|(train_data.lunar28==1)|(train_data.ChristmasEve==1))).astype(int)
 
+#Fit the Model using xgboost
 model = XGBRegressor(n_estimators=1400, learning_rate=0.009, n_jobs=4, max_depth = 10)
 model.fit(X_train, y_train)
 
@@ -109,8 +108,8 @@ reg = model.fit(train_data[train_data.columns.difference(['speed','id','date','y
 #Load Testing Data
 test_data = pd.read_csv("./test.csv")
 
+#Extract Information from Testing Data
 test_data['date'] = pd.to_datetime(test_data['date'], dayfirst=True)
-
 test_data['year'] = pd.DatetimeIndex(test_data['date']).year
 test_data['month'] = pd.DatetimeIndex(test_data['date']).month
 test_data['day'] = pd.DatetimeIndex(test_data['date']).day
@@ -118,7 +117,7 @@ test_data['hour'] = pd.DatetimeIndex(test_data['date']).hour
 test_data['weekday'] = pd.DatetimeIndex(test_data['date']).weekday
 test_data['week_number'] = test_data['date'].dt.strftime('%U')
 
-#One-Hot Encoded
+#Feature Engineering (One-Hot Encoded for the test data)
 test_data['2017'] = (test_data.year==2017).astype(int)
 test_data['2018'] = (test_data.year==2018).astype(int)
 test_data['Dawn'] = (test_data.hour<7).astype(int)
@@ -178,7 +177,6 @@ test_data['StatutoryHoliday'] = ((test_data.NewYear==1)|(test_data.ChineseNewYea
 test_data['Rain'] = (((test_data.month==5)&(test_data.day==24)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==12)&(test_data.year==2017))|((test_data.month==7)&(test_data.day==18)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==8)&(test_data.year==2018))).astype(int)
 test_data['Impact_by_Rain'] = ((test_data.hour>=7) & (test_data.hour<=19)&(test_data.Rain==1)).astype(int)
 test_data['Mangkhut'] = ((test_data.month==9)&(test_data.day==16)&(test_data.year==2018) & (test_data.hour>=10) & (test_data.hour<=15)).astype(int)
-#test_data['Typhoon_Weekend'] = (((test_data.month==10)&(test_data.day==15)&(test_data.year==2017))|((test_data.month==8)&(test_data.day==27)&(test_data.year==2017))|((test_data.month==7)&(test_data.day==23)&(test_data.year==2017))|((test_data.month==9)&(test_data.day==16)&(test_data.year==2018))).astype(int)
 test_data['Typhoon_WorkingDay'] = (((test_data.month==8)&(test_data.day==23)&(test_data.year==2017))|((test_data.month==6)&(test_data.day==13)&(test_data.year==2017))).astype(int)
 test_data['Valentine'] = ((test_data.month==2)&(test_data.day==14)).astype(int)
 test_data['Halloween'] = ((test_data.month==10)&(test_data.day==31)).astype(int)
@@ -188,6 +186,7 @@ test_data['MidAutumn'] = (((test_data.month==10)&(test_data.day==4)&(test_data.y
 test_data['ChristmasEve'] = ((test_data.month==12)&(test_data.day==24)&(test_data.year==2018)).astype(int)
 test_data['EarlyOffWork'] = ((test_data.hour>=16) & (test_data.hour<=18)&((test_data.WinterSolstice==1)|(test_data.MidAutumn==1)|(test_data.lunar28==1)|(test_data.ChristmasEve==1))).astype(int)
 
+#Generate the prediction
 predict_y = reg.predict(test_data[test_data.columns.difference(['speed','id','date','year','month','day','hour','weekday','week_number','week_53'])])
 
 #Output File
